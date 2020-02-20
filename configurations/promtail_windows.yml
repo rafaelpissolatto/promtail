@@ -1,0 +1,42 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: positions.yaml
+
+clients:
+  - url: http://IP-LOKI-SERVER:3100/loki/api/v1/push
+
+scrape_configs:
+
+- job_name: vbox-main
+  static_configs:
+  - targets:
+    - localhost
+    labels:
+      service: teste
+      appender: main
+      __path__: 'C:\Temp\20190619\*.log'
+
+  pipeline_stages:
+    - match:
+        selector: '{appender="main",service="teste"}'
+        stages:
+        - regex:
+            expression: '(?P<data>^\d{2}:\d{2}:\d{2}.\d{3}) (?P<thread>\[\d+\]) (?P<level>\w{4,5}) (?P<message>.*)'
+        - timestamp:
+            source: data
+            format: RFC3339Nano
+        - labels:
+            thread:
+            level:
+            message:
+        - output:
+            source: message
+
+            # promtail-windows-amd64.exe --config.file promtail_windows.yml --log.level debug
+            
+            # https://github.com/grafana/loki/blob/master/docs/clients/promtail/pipelines.md
+            # https://github.com/grafana/loki/blob/master/docs/clients/promtail/stages/regex.md
+            # https://github.com/grafana/loki/blob/master/docs/clients/promtail/stages/timestamp.md
